@@ -1,12 +1,17 @@
 #!/bin/bash
 if [ $# -eq 2 ]
 then
-
-	for INSTANCE_ID in `elb-describe-instance-health $2 | cut -c14-23`
+	ELB_INSTANCES=`elb-describe-instance-health $2 | cut -c14-23`
+	NUMBER_OF_INSTANCES=`echo "$ELB_INSTANCES" | wc -l`
+	echo "$NUMBER_OF_INSTANCES instances found in $2"
+	for INSTANCE_ID in $ELB_INSTANCES
 	do 
+		echo "Checking status of $INSTANCE_ID"
 		INSTANCE_IP=`ec2-describe-instances $INSTANCE_ID | sed -n 2p | cut -f17`
+		echo " Instance IP is: $INSTANCE_IP"
 		STATUS=`curl --resolve $1:80:$INSTANCE_IP $1 -I -s | head -n 1`
-		echo "$INSTANCE_ID: $STATUS"
+		echo " Response status is: $STATUS"
+		echo " "
 	done
 else
 	echo "USAGE: check-elb-instances-status.sh domain-name elb-name"
