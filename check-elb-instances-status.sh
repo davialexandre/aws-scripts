@@ -9,9 +9,14 @@ then
 		echo "Checking status of $INSTANCE_ID"
 		INSTANCE_IP=`ec2-describe-instances $INSTANCE_ID | sed -n 2p | cut -f17`
 		echo " Instance IP is: $INSTANCE_IP"
-		STATUS=`curl --resolve $1:80:$INSTANCE_IP $1 -I -s | head -n 1`
+		STATUS=`curl --resolve $1:80:$INSTANCE_IP $1 -I -s | head -n 1 | tr -d '\r\n'`
 		echo " Response status is: $STATUS"
-		echo " "
+		if [ "$STATUS" != 'HTTP/1.1 200 OK' ]
+		then
+			echo " Removig instance from elb"
+			elb-deregister-instances-from-lb $2 --instances $INSTANCE_ID
+		fi
+		echo ""
 	done
 else
 	echo "USAGE: check-elb-instances-status.sh domain-name elb-name"
